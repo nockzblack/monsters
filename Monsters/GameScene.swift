@@ -30,16 +30,17 @@ func sqrt(a: CGFloat) -> CGFloat {
 #endif
 
 extension CGPoint {
-    func lenght() -> CGFloat {
+    func length() -> CGFloat {
         return sqrt(x*x + y*y)
+    }
+
+
+    func normalized() -> CGPoint {
+        return self / length()
     }
 }
 
-func normalized() -> CGPoint {
-    return self / length()
-}
-
-class GameScene: SKScene, SKPhysicsContactDelegate {
+class GameScene: SKScene {
     struct PhysicsCategory {
         static let none: UInt32 = 0
         static let all: UInt32 = UInt32.max
@@ -56,6 +57,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         
         backgroundColor = SKColor.green
         player.position = CGPoint (x: size.width * 0.3, y: size.height * 0.5)
+        addChild(player)
+        
         physicsWorld.gravity = .zero
         physicsWorld.contactDelegate = self
         
@@ -69,7 +72,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     }
     
     func random() -> CGFloat {
-        return CGFloat(arc4random() / 0xFFFFFFFFF)
+        return CGFloat(Float(arc4random()) / 0xFFFFFFFFF)
     }
     
     func random(min: CGFloat, max: CGFloat) -> CGFloat {
@@ -116,7 +119,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     }
     
     override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
-        guard let touch = touches.first {
+        guard let touch = touches.first else {
             return
         }
         
@@ -188,6 +191,15 @@ extension GameScene: SKPhysicsContactDelegate {
         if contact.bodyA.categoryBitMask < contact.bodyB.categoryBitMask {
             firstBody = contact.bodyA
             secondBody = contact.bodyB
+        } else {
+            firstBody = contact.bodyB
+            secondBody = contact.bodyA
+        }
+        
+        if ((firstBody.categoryBitMask & PhysicsCategory.monster != 0) && (secondBody.categoryBitMask & PhysicsCategory.projectile != 0)) {
+            if let monster = firstBody.node as? SKSpriteNode, let projectile = secondBody.node as? SKSpriteNode {
+                projectileDidCollideWithMonster(projectile: projectile, monster: monster)
+            }
         }
     }
 }
